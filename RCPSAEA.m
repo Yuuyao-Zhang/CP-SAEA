@@ -68,20 +68,21 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
 
 
     % Data augmentation
-    OffDec = Offspring.decs;
-    OffObj = Offspring.objs;
-    [FrontNo1,~] = NDSort(OffObj,inf);
-    trainx1 = OffDec(FrontNo1==1,:);
-
-    GANDec = GAN(trainx1, Problem);
-    GANObj = RBFPredictor(Problem, GANDec, rbfCell);
-    [FrontNo2,~] = NDSort(GANObj,inf);
-
-    GANoff = SOLUTION(GANDec,GANObj,zeros(size(GANDec,1),1));
-    Offspring = [Offspring(FrontNo1==1), GANoff(FrontNo2==1)];
-
-    % [FrontNo1,~] = NDSort(Offspring.objs,inf);
-    % Offspring = Offspring(FrontNo1==1);
+    % OffDec = Offspring.decs;
+    % OffObj = Offspring.objs;
+    % [FrontNo1,~] = NDSort(OffObj,inf);
+    % trainx1 = OffDec(FrontNo1==1,:);
+    % 
+    % GANDec = GAN(trainx1, Problem);
+    % GANObj = RBFPredictor(Problem, GANDec, rbfCell);
+    % [FrontNo2,~] = NDSort(GANObj,inf);
+    % 
+    % GANoff = SOLUTION(GANDec,GANObj,zeros(size(GANDec,1),1));
+    % Offspring = [Offspring(FrontNo1==1), GANoff(FrontNo2==1)];
+    
+    % No data augmentation
+    [FrontNo1,~] = NDSort(Offspring.objs,inf);
+    Offspring = Offspring(FrontNo1==1);
     
 
 end

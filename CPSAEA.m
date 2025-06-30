@@ -24,20 +24,17 @@ classdef CPSAEA < ALGORITHM
             %% Generate random population
             PopDec     = UniformPoint(Problem.N, Problem.D, 'Latin');
             Population = Problem.Evaluation(repmat(Problem.upper - Problem.lower, Problem.N, 1) .* PopDec + repmat(Problem.lower, Problem.N, 1));
-            % [W, SubN]  = UniformPoint(SubN,Problem.M);
+            [W, SubN]  = UniformPoint(SubN,Problem.M);
 
             Wb = eye(Problem.M);
             Wb(Wb==0) = 1e-6;
 
-
             %% Optimization
             while Algorithm.NotTerminated(Population)
-                % 创建 RBF 网络
-                % evalc('net = newrb(Population.decs'', Population.objs'', 0.01, 1, Problem.D/2, 300);');
                 % 选择RefPop
-                % RefPop = Population(RefSelection(Problem, Population, Wb));
-                RefPop = EnvironmentalSelection(Population, c);
-                % RefPop = Population(RefSelection2(Problem, Population, c));
+                % RefPop = EnvironmentalSelection(Population, c);
+                RefPop = Population(RefSelection3(Population, W));
+                
                 % Reconstruct Problem
                 Off = RCPSAEA(Problem, Population, RefPop, SubN);
 
@@ -51,11 +48,9 @@ classdef CPSAEA < ALGORITHM
                 Offspring = Problem.Evaluation(candidates.decs);
                 Population = [Population,Offspring];
 
-                % if Problem.FE >=Problem.maxFE
-                %     % [FrontNo,~] = NDSort(Population.objs,inf);
-                %     Elites = SelectReference(Problem, Population, Wb);
-                %     Population = Elites;
-                % end
+                % update weight vector
+                W = UpdateV(Problem, Population, W, c);
+
                 
                 
             end
