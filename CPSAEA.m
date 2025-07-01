@@ -19,7 +19,7 @@ classdef CPSAEA < ALGORITHM
     methods
         function main(Algorithm,Problem)
             %% Parameter setting
-            [SubN,k,c] = Algorithm.ParameterSet(ceil(Problem.N/2), 5, 2 * Problem.M);
+            [SubN,k,c] = Algorithm.ParameterSet(ceil(Problem.N/2), 5, 3 * Problem.M);
 
             %% Generate random population
             PopDec     = UniformPoint(Problem.N, Problem.D, 'Latin');
@@ -33,7 +33,12 @@ classdef CPSAEA < ALGORITHM
             while Algorithm.NotTerminated(Population)
                 % 选择RefPop
                 % RefPop = EnvironmentalSelection(Population, c);
-                RefPop = Population(RefSelection3(Population, W));
+                % if Problem.FE/(Problem.maxFE-Problem.N) < 0.5
+                %     RefPop = Population(RefSelection3(Population, W));
+                % else
+                %     RefPop = EnvironmentalSelection(Population, c);
+                % end
+                RefPop = EnvironmentalSelection(Population, c);
                 
                 % Reconstruct Problem
                 Off = RCPSAEA(Problem, Population, RefPop, SubN);

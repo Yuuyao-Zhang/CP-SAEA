@@ -25,7 +25,6 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
     % Initlization
     w0 = rand(SubN, length(RefPop)).* wmax; 
     [fitness, ~] = FitCal(Problem, rbfCell, w0, RefPopFix, Reference);
-    pop = w0;
 
     % Construct regression model (w0 -> fitness (HV))
     [krigingModel, ~] = dacefit(w0, fitness,'regpoly0','corrgauss',1*ones(1,length(RefPop)), 0.001*ones(1,length(RefPop)), wmax*ones(1,length(RefPop)));
@@ -34,6 +33,7 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
     [~, idx] = sort(fitness, 'ascend');
     bestInd.decs = w0(idx(1),:);
     bestInd.objs = fitness(idx(1),:);
+    status = 0; % status of reference point update
     
     % Generate new individuals
     itermax = 5;
@@ -47,18 +47,27 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
             
             % Evaluate new individual
             for it = 1 : size(o, 1)
-                % [oy, omse] = predictor(o(it,:), krigingCell);
                 [oy, omse] = predictor(o(it,:), krigingModel);
-    
+                
+                % Update best individual of reconstruct problem
                 if oy < bestInd.objs
                     % Confidence verification
-                    [~, bmse] = predictor(bestInd.decs, krigingModel);
-                    dis = (oy + 3 * sqrt(omse)) - (bestInd.decs - 3 * sqrt(bmse));
+                    [by, bmse] = predictor(bestInd.decs, krigingModel);
+                    dis = (oy + 3 * sqrt(omse)) - (by - 3 * sqrt(bmse));
                     if dis > 0
                         bestInd.decs = o(it,:);
                         bestInd.objs = oy;
+                        status = 1;
                     end
                 end
+                
+                % Update reference point
+                % if status == 1
+                %     status = 0;
+                %     [~, Offspring] = FitCal(Problem, rbfCell, bestInd.decs, RefPopFix, Reference);
+                %     pop = [RefPop,Offspring];
+                %     [RefPop,~,~] = EnvironmentalSelection(pop,length(RefPop));
+                % end
             end
             
             % Transform to origin problem

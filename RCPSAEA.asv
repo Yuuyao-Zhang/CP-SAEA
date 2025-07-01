@@ -25,7 +25,6 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
     % Initlization
     w0 = rand(SubN, length(RefPop)).* wmax; 
     [fitness, ~] = FitCal(Problem, rbfCell, w0, RefPopFix, Reference);
-    pop = w0;
 
     % Construct regression model (w0 -> fitness (HV))
     [krigingModel, ~] = dacefit(w0, fitness,'regpoly0','corrgauss',1*ones(1,length(RefPop)), 0.001*ones(1,length(RefPop)), wmax*ones(1,length(RefPop)));
@@ -34,6 +33,7 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
     [~, idx] = sort(fitness, 'ascend');
     bestInd.decs = w0(idx(1),:);
     bestInd.objs = fitness(idx(1),:);
+    status = 0; % status of reference point update
     
     % Generate new individuals
     itermax = 5;
@@ -47,9 +47,9 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
             
             % Evaluate new individual
             for it = 1 : size(o, 1)
-                % [oy, omse] = predictor(o(it,:), krigingCell);
                 [oy, omse] = predictor(o(it,:), krigingModel);
-    
+                
+                % Update best individual of reconstruct problem
                 if oy < bestInd.objs
                     % Confidence verification
                     [~, bmse] = predictor(bestInd.decs, krigingModel);
@@ -57,7 +57,17 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
                     if dis > 0
                         bestInd.decs = o(it,:);
                         bestInd.objs = oy;
+                        status = 1;
                     end
+                end
+                
+                % Update reference point
+                if status == 1
+                    status = 0;
+                    refobjs = RefPop.objs;
+                    [~, Offspring] = FitCal(Problem, rbfCell, bestInd.decs, RefPopFix, Reference);
+                    bestIndObj = Offspring.objs;
+                    temp = [refobjs;]
                 end
             end
             
@@ -68,19 +78,22 @@ function Offspring = RCPSAEA(Problem, Population, RefPop, SubN)
 
 
     % Data augmentation
-    OffDec = Offspring.decs;
-    OffObj = Offspring.objs;
-    [FrontNo1,~] = NDSort(OffObj,inf);
-    [FrontNo2,~] = BiasSort(OffObj);
-    trainx1 = OffDec(FrontNo1==1,:);
-    trainob1 = OffObj(FrontNo1==1,:);
-
-    trainx2 = 
-    GANDec = GAN(trainx1, Problem);
-    GANObj = RBFPredictor(Problem, GANDec, rbfCell);
-    GANoff = SOLUTION(GANDec,GANObj,zeros(size(GANDec,1),1));
-
-    Offspring = [Offspring, GANoff];
+    % OffDec = Offspring.decs;
+    % OffObj = Offspring.objs;
+    % [FrontNo1,~] = NDSort(OffObj,inf);
+    % trainx1 = OffDec(FrontNo1==1,:);
+    % 
+    % GANDec = GAN(trainx1, Problem);
+    % GANObj = RBFPredictor(Problem, GANDec, rbfCell);
+    % [FrontNo2,~] = NDSort(GANObj,inf);
+    % 
+    % GANoff = SOLUTION(GANDec,GANObj,zeros(size(GANDec,1),1));
+    % Offspring = [Offspring(FrontNo1==1), GANoff(FrontNo2==1)];
+    
+    % No data augmentation
+    [FrontNo1,~] = NDSort(Offspring.objs,inf);
+    Offspring = Offspring(FrontNo1==1);
+    
 
 end
 
