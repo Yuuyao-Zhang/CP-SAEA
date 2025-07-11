@@ -1,10 +1,6 @@
 classdef CPSAEA < ALGORITHM
 % <multi/many> <real/integer> <expensive>
 
-%------------------------------- Reference --------------------------------
-% Q. Zhang, W. Liu, E. Tsang, and B. Virginas, Expensive multiobjective
-% optimization by MOEA/D with Gaussian process model, IEEE Transactions on
-% Evolutionary Computation, 2010, 14(3): 456-474.
 %------------------------------- Copyright --------------------------------
 % Copyright (c) 2021 BIMK Group. You are free to use the PlatEMO for
 % research purposes. All publications which use this platform or any code
@@ -14,8 +10,6 @@ classdef CPSAEA < ALGORITHM
 % Computational Intelligence Magazine, 2017, 12(4): 73-87".
 %--------------------------------------------------------------------------
 
-% This function is written by Cheng He
-
     methods
         function main(Algorithm,Problem)
             %% Parameter setting
@@ -24,21 +18,38 @@ classdef CPSAEA < ALGORITHM
             %% Generate random population
             PopDec     = UniformPoint(Problem.N, Problem.D, 'Latin');
             Population = Problem.Evaluation(repmat(Problem.upper - Problem.lower, Problem.N, 1) .* PopDec + repmat(Problem.lower, Problem.N, 1));
-            [W, SubN]  = UniformPoint(SubN,Problem.M);
+            [W, c]  = UniformPoint(c,Problem.M);
 
-            Wb = eye(Problem.M);
-            Wb(Wb==0) = 1e-6;
+            % reference of HV
+            Reference    = max(Population.objs,[],1); 
+            
+            % MaxHV
+            maxhv = 0;
+            s = 0;
 
             %% Optimization
             while Algorithm.NotTerminated(Population)
+                
                 % 选择RefPop
                 % RefPop = EnvironmentalSelection(Population, c);
+
+                ind = HV(Population.objs,Reference);
+                if ind > maxhv
+                    RefPop = EnvironmentalSelection(Population, c);
+                    maxhv = ind;
+                else
+                    RefPop = Population(RefSelection(Population, W));
+                    s = 1;
+                end
+
                 % if Problem.FE/(Problem.maxFE-Problem.N) < 0.5
                 %     RefPop = Population(RefSelection3(Population, W));
                 % else
                 %     RefPop = EnvironmentalSelection(Population, c);
                 % end
-                RefPop = EnvironmentalSelection(Population, c);
+                
+                % RefPop = Population(RefSelection(Population, W));
+                % RefPop = EnvironmentalSelection(Population, c);
                 
                 % Reconstruct Problem
                 Off = RCPSAEA(Problem, Population, RefPop, SubN);
@@ -54,10 +65,14 @@ classdef CPSAEA < ALGORITHM
                 Population = [Population,Offspring];
 
                 % update weight vector
-                W = UpdateV(Problem, Population, W, c);
+                % if s == 1
+                %     W = UpdateV(Problem, Population, W, c);
+                %     s=0;
+                % end
 
                 
-                
+                % Update reference of HV
+                Reference    = max(Population.objs,[],1);
             end
 
             
